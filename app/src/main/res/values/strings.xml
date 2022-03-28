@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">Waku</string>
+    <string name="msg_error_connection">Jaringan anda bermasalah, silahkan periksa kembali dan pastikan internet Anda aktif</string>
+    <string name="lbl_reload">Muat Ulang</string>
+    <string name="lbl_loading">Mohon tunggu…</string>
+</resources>
