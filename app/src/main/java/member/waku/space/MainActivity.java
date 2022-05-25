@@ -30,6 +30,7 @@ import androidx.core.content.ContextCompat;
 import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.io.File;
@@ -53,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
     private Uri mCapturedImageURI = null;
     private static final int FILE_CHOOSER_RESULT_CODE = 1;
     private String currentUrl = "";
+    private boolean closeApp = false;
 
 
     @Override
@@ -67,14 +69,14 @@ public class MainActivity extends AppCompatActivity {
 
         setWebView(currentUrl);
 
-        binding.swipeRefresh.setOnRefreshListener(() -> setWebView(currentUrl));
+//        binding.swipeRefresh.setEnabled(false);
+//        binding.swipeRefresh.setOnRefreshListener(() -> setWebView(currentUrl));
 
         if (!AppStatus.getInstance().isOnline(this)) {
             openSnackBar();
         }
-        ;
 
-        scrollChanged();
+//        scrollChanged();
     }
 
 
@@ -83,13 +85,12 @@ public class MainActivity extends AppCompatActivity {
         MyWebClient client = new MyWebClient();
         webViewKit.setWebViewClient(client);
 
-
         if (WebViewFeature.isFeatureSupported(WebViewFeature.START_SAFE_BROWSING)) {
             WebViewCompat.startSafeBrowsing(this, success -> {
                         if (!success) {
                             Toast.makeText(this, "Not success", Toast.LENGTH_LONG).show();
                         } else {
-                            binding.tagLoading.rlLoadAgain.setVisibility(View.INVISIBLE);
+//                            binding.tagLoading.rlLoadAgain.setVisibility(View.INVISIBLE);
                             binding.webViewClient.setWebViewClient(client);
                             binding.webViewClient.loadUrl(mUrl);
                             WebSettings webSettings = binding.webViewClient.getSettings();
@@ -109,12 +110,13 @@ public class MainActivity extends AppCompatActivity {
                             webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
                             webSettings.setAppCacheEnabled(false);
                             webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
-                            webSettings.setUseWideViewPort(true);
+                            webSettings.setUseWideViewPort(false);
                             webSettings.setLoadWithOverviewMode(true);
                             webSettings.setDatabaseEnabled(true);
+                            webSettings.setBuiltInZoomControls(true);
+                            webSettings.setDisplayZoomControls(false);
 
                             binding.webViewClient.addJavascriptInterface(new JavaScriptShareInterface(), "AnroidShareHandler");
-
                             binding.webViewClient.setWebViewClient(new WebViewClient() {
 
 
@@ -145,7 +147,8 @@ public class MainActivity extends AppCompatActivity {
                                     super.onPageFinished(view, url);
                                     binding.tagLoadingView.rlLoading.setVisibility(View.GONE);
                                     binding.webViewClient.setVisibility(View.VISIBLE);
-                                    stopRefresh();
+
+//                                    stopRefresh();
 
                                 }
 
@@ -153,12 +156,15 @@ public class MainActivity extends AppCompatActivity {
                                 @Override
                                 public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                                     super.onReceivedError(view, request, error);
+//                                    stopRefresh();
                                     binding.webViewClient.setVisibility(View.INVISIBLE);
-                                    binding.tagLoading.rlLoadAgain.setVisibility(View.VISIBLE);
-                                    binding.webViewClient.loadUrl("file:///android_asset/page_error.html");
-                                    stopRefresh();
+                                    binding.webViewClient.post(() -> binding.webViewClient.loadUrl(StringUtils.URL_PAGE_ERROR));
+                                    closeApp = true;
+
 
                                 }
+
+
                             });
 
                             binding.webViewClient.setWebChromeClient(new WebChromeClient() {
@@ -181,7 +187,7 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         }
                                     } catch (Exception e) {
-                                        Log.e("TAG", "RARA : " + e);
+                                        Log.i("TAG", "RARA : " + e);
                                     }
                                 }
 
@@ -248,7 +254,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
         EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
     }
 
@@ -305,13 +310,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void stopRefresh() {
-        binding.swipeRefresh.setRefreshing(false);
+//        binding.swipeRefresh.setRefreshing(false);
     }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if ((keyCode == KeyEvent.KEYCODE_BACK) && binding.webViewClient.canGoBack()) {
             binding.webViewClient.goBack();
+            if (closeApp) {
+                askCloseDialog();
+            }
             return true;
         }
         return super.onKeyDown(keyCode, event);
@@ -319,12 +327,22 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
-        finishAffinity();
+        askCloseDialog();
+
     }
 
-    private void scrollChanged() {
-        binding.swipeRefresh.getViewTreeObserver().addOnScrollChangedListener(() -> binding.swipeRefresh.setEnabled(binding.webViewClient.getScrollY() == 0));
+//    private void scrollChanged() {
+//        binding.swipeRefresh.getViewTreeObserver().addOnScrollChangedListener(() -> binding.swipeRefresh.setEnabled(binding.webViewClient.getScrollY() == 0));
+//    }
+
+    private void askCloseDialog() {
+        new MaterialAlertDialogBuilder(MainActivity.this)
+                .setMessage("Apakah Anda ingin keluar?")
+                .setNegativeButton("Tidak", (dialogInterface, i) -> {
+
+                })
+                .setPositiveButton("Ya", (dialogInterface, i) -> finishAffinity())
+                .show();
     }
 
 
